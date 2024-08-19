@@ -27,6 +27,9 @@ public class StreamUtils {
     }
 
     public static void refresh() throws IOException {
+        // Update IGNs before performing any operations
+        updateIGNSync();
+
         Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             List<String> channels = TLA.config.getStringList("channels");
 
@@ -248,5 +251,27 @@ public class StreamUtils {
             return linkedUsers;
         }
         return new ArrayList<>();
+    }
+
+    // New method to update IGNs
+    private static void updateIGNSync() {
+        Section linkedUsersSection = TLA.config.getSection("linked_users");
+        if (linkedUsersSection != null) {
+            for (Object key : linkedUsersSection.getKeys()) {
+                UUID uuid = UUID.fromString(key.toString());
+                String currentIGN = Bukkit.getOfflinePlayer(uuid).getName();
+
+                if (currentIGN != null) {
+                    List<String> linkedChannels = TLA.config.getStringList("linked_users." + key);
+                    TLA.config.set("linked_users." + currentIGN, linkedChannels);
+                    TLA.config.set("linked_users." + key, null);
+                }
+            }
+            try {
+                TLA.config.save();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
